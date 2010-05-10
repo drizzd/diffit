@@ -152,6 +152,8 @@ function s:Diffit_()
 	else
 		call cursor(abs(s:Diffpos(0)), 1)
 	end
+
+	echon '"' . path . '"'
 endfunction
 
 function s:Diffpos(orig_pos)
