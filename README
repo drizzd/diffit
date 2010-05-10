@@ -1,0 +1,13 @@
+*** diffit ***
+
+This is a git plugin for vim. The plugin is under development and may have
+serious bugs! The goal is to support much of git-gui's features, and possibly
+more.
+
+To install, copy diffit.vim to ~/.vim/plugin/diffit.vim .
+
+To toggle diffit mode, use <Leader>d, where <Leader> is '\' by default.
+
+Have fun!
+
+Clemens Buchacher <drizzd@aon.at>, 10-May-2010
