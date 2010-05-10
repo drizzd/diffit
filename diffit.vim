@@ -62,14 +62,27 @@ function s:Header()
 	return [header, n - 1]
 endfunction
 
+function s:Exit()
+	let view = b:view
+	bdelete
+	call winrestview(view)
+endfunction
+
 function s:Diffit()
 	if exists('b:diffit') && b:diffit == 1
-		let view = b:view
-		bdelete
-		call winrestview(view)
+		call s:Exit()
 		return
 	end
+	try
+		call s:Diffit_()
+	catch /^diffit$/
+		if exists('b:diffit') && b:diffit == 1
+			call s:Exit()
+		end
+	endtry
+endfunction
 
+function s:Diffit_()
 	update
 	let out = s:System('git rev-parse',  '--is-inside-work-tree')
 	if v:shell_error == 128 || split(out)[0] != 'true'
@@ -209,7 +222,7 @@ function s:Stage_hunk(pos)
 	silent exe h_range . 'delete _'
 	if line('$') == header_end
 		bdelete
-		call s:Diffit()
+		call s:Diffit_()
 		return
 	end
 	setlocal nomodifiable
