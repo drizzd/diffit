@@ -137,7 +137,7 @@ function s:Diffit()
 		let view['col'] += 1
 		call winrestview(view)
 	else
-		call cursor(abs(s:Diffpos(1)), 2)
+		call cursor(abs(s:Diffpos(0)), 1)
 	end
 endfunction
 
@@ -158,14 +158,14 @@ function s:Diffpos(orig_pos)
 		if start > a:orig_pos
 			break
 		end
-		let diffpos = line('.') + 1
+		let diffpos = line('.')
 		let hunk_start = start
 		let hunk_end = hunk_start + length - 1
 	endwhile
 	if diffpos < 0
 		return diffpos
 	end
-	let pos = hunk_start
+	let pos = hunk_start - 1
 	let target_pos = min([a:orig_pos, hunk_end])
 	while diffpos < line('$')
 		if getline(diffpos) =~ '^-'
@@ -179,7 +179,11 @@ function s:Diffpos(orig_pos)
 		let pos += 1
 	endwhile
 
-	return diffpos
+	if getline(diffpos) =~ '^-'
+		return -last
+	else
+		return diffpos
+	end
 endfunction
 
 function s:Stage_hunk(pos)
