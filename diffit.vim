@@ -7,7 +7,7 @@
 " ============================================================================
 if exists('loaded_diffit')
     finish
-endif
+end
 let loaded_diffit = 1
 
 let s:diffit_version = '0'
@@ -52,7 +52,7 @@ function s:Header()
 						\l =~ '^+++ '
 				call add(header, l)
 				continue
-			endif
+			end
 			if l !~ '^index '
 				break
 			end
@@ -66,7 +66,7 @@ function s:Diffit()
 		bdelete
 		call winrestview(view)
 		return
-	endif
+	end
 
 	update
 	let out = s:System('git rev-parse',  '--is-inside-work-tree')
@@ -152,24 +152,24 @@ function s:Diffpos(orig_pos)
 		end
 		if start > a:orig_pos
 			break
-		endif
+		end
 		let diffpos = line('.') + 1
 		let hunk_start = start
 		let hunk_end = hunk_start + length - 1
 	endwhile
 	if diffpos < 0
 		return diffpos
-	endif
+	end
 	let pos = hunk_start
 	let target_pos = min([a:orig_pos, hunk_end])
 	while diffpos < line('$')
 		if getline(diffpos) =~ '^-'
 			let diffpos += 1
 			continue
-		endif
+		end
 		if pos >= target_pos
 			break
-		endif
+		end
 		let diffpos += 1
 		let pos += 1
 	endwhile
@@ -182,12 +182,12 @@ function s:Stage_hunk(pos)
 	let h_start = search('^@@', 'bcW')
 	if h_start == 0
 		return
-	endif
+	end
 	call cursor(h_start, 1)
 	let h_end = search('^@@', 'nW')-1
 	if h_end < 0
 		let h_end = line('$')
-	endif
+	end
 	let h_range = h_start . ',' . h_end
 
 	let [patch, header_end] = s:Header()
