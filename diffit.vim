@@ -29,14 +29,14 @@ function s:Info(msg)
 endfunction
 
 function s:Die(msg)
-	call s:Error('fatal: ' . msg)
+	call s:Error('fatal: ' . a:msg)
 	throw "diffit"
 endfunction
 
 function s:System(...)
 	let out = system(join(a:000))
 	if v:shell_error
-		call s:Die(cmd . ' failed: ' . out)
+		call s:Die(a:0 . ' failed: ' . out)
 	end
 	return out
 endfunction
