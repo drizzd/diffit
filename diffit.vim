@@ -48,6 +48,8 @@ function s:Header()
 			if l =~ '^diff --git ' ||
 						\l =~ '^diff --cc ' ||
 						\l =~ '^diff --combined ' ||
+						\l =~ '^old mode ' ||
+						\l =~ '^new mode ' ||
 						\l =~ '^--- ' ||
 						\l =~ '^+++ '
 				call add(header, l)
@@ -146,7 +148,10 @@ function s:Diffpos(orig_pos)
 	call cursor(1, 1)
 	while search('^@@', 'W') > 0
 		let [start, length] = matchlist(getline('.'),
-			\'^@@ -[0-9]*,[0-9]* +\([0-9]*\),\([0-9]*\)')[1:2]
+			\'^@@ -[0-9]*,[0-9]* +\%(\([0-9]*\),\)\?\([0-9]*\)')[1:2]
+		if empty(start)
+			let start = 1
+		end
 		if diffpos < 0
 			let diffpos = -line('.')
 		end
