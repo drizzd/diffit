@@ -28,6 +28,19 @@ function s:Info(msg)
 	echon 'diffit: ' . a:msg
 endfunction
 
+function s:Die(msg)
+	call s:Error('fatal: ' . msg)
+	throw "diffit"
+endfunction
+
+function s:System(...)
+	let out = system(join(a:000))
+	if v:shell_error
+		call s:Die(cmd . ' failed: ' . out)
+	end
+	return out
+endfunction
+
 function s:Header()
 	let header = []
 	for n in range(1, line('$'))
@@ -56,7 +69,7 @@ function s:Diffit()
 	endif
 
 	update
-	let out = system('git rev-parse --is-inside-work-tree')
+	let out = s:System('git rev-parse',  '--is-inside-work-tree')
 	if v:shell_error == 128 || split(out)[0] != 'true'
 		call s:Error('not inside work tree')
 		return
@@ -64,12 +77,26 @@ function s:Diffit()
 		call s:Error('git rev-parse failed: ' . out)
 		return
 	end
-	let diff = tempname()
-	let out = system('git diff -- ' . bufname('%') . ' > ' . diff)
-	if v:shell_error
-		call s:Error('git diff failed: ' . out)
+	let out = s:System('git diff', '--name-only')
+	let pathlist = split(out, '\n')
+	if empty(pathlist)
+		call s:Info('no changes')
 		return
 	end
+	let orig_path = bufname('%')
+	let k = index(pathlist, orig_path)
+	if k > 0
+		call remove(pathlist, k)
+		call insert(pathlist, orig_path, 0)
+	end
+	let diff = tempname()
+	let path = ''
+	for path in pathlist
+		let out = s:System('git diff', '--', path, '>', diff)
+		if getfsize(diff) > 0
+			break
+		end
+	endfor
 	if getfsize(diff) == 0
 		call s:Info('no changes')
 		return
@@ -77,6 +104,7 @@ function s:Diffit()
 
 	let view = winsaveview()
 	silent! exe 'edit ' . tempname()
+	let b:view = copy(view)
 	let b:diffit = 1
 	setf git-diff
 	setlocal noswapfile
@@ -93,19 +121,22 @@ function s:Diffit()
 	silent 1delete _
 	setlocal nomodifiable
 
-	let b:view = copy(view)
-	let orig_pos = view['lnum']
-	let new_pos = s:Diffpos(orig_pos)
-	let view['lnum'] = abs(new_pos)
-	if new_pos > 0
-		let view['topline'] += new_pos - orig_pos
-		let view['topline'] = max([1, view['topline']])
+	if path == orig_path
+		let orig_pos = view['lnum']
+		let new_pos = s:Diffpos(orig_pos)
+		let view['lnum'] = abs(new_pos)
+		if new_pos > 0
+			let view['topline'] += new_pos - orig_pos
+			let view['topline'] = max([1, view['topline']])
+		else
+			let view['topline'] = -new_pos - 4
+		end
+		let view['curswant'] += 1
+		let view['col'] += 1
+		call winrestview(view)
 	else
-		let view['topline'] = -new_pos - 4
-	endif
-	let view['curswant'] += 1
-	let view['col'] += 1
-	call winrestview(view)
+		call cursor(abs(s:Diffpos(1)), 2)
+	end
 endfunction
 
 function s:Diffpos(orig_pos)
@@ -163,17 +194,13 @@ function s:Stage_hunk(pos)
 	call extend(patch, getline(h_start, h_end))
 	let patchfile = tempname()
 	call writefile(patch, patchfile)
-	let git_apply = 'git apply --cached --whitespace=nowarn'
-	let out = system(git_apply . ' ' . patchfile)
-	if v:shell_error
-		call s:Error('git apply failed: ' . out)
-		return
-	endif
+	let out = s:System('git apply', '--cached', '--whitespace=nowarn', patchfile)
 
 	setlocal modifiable
 	silent exe h_range . 'delete _'
 	if line('$') == header_end
 		bdelete
+		call s:Diffit()
 		return
 	end
 	setlocal nomodifiable
