@@ -74,7 +74,7 @@ function s:Diffit()
 		return
 	end
 	try
-		call s:Diffit_()
+		call s:Diffit_init()
 	catch /^diffit$/
 		if exists('b:diffit') && b:diffit == 1
 			call s:Exit()
@@ -82,7 +82,45 @@ function s:Diffit()
 	endtry
 endfunction
 
-function s:Diffit_()
+function s:Read_diff(pathlist)
+	let diff = tempname()
+	let path = ''
+	for path in a:pathlist
+		let out = s:System('git diff', '--', path, '>', diff)
+		if getfsize(diff) > 0
+			break
+		end
+	endfor
+	return [diff, path]
+endfunction
+
+function s:Write_diff(diff, orig)
+	setlocal modifiable
+	silent 1,$delete _
+	silent exe 'read ' . a:diff
+	silent 1delete _
+	setlocal nomodifiable
+
+	if a:orig
+		let orig_pos = b:view['lnum']
+		let new_pos = s:Diffpos(orig_pos)
+		let view = copy(b:view)
+		let view['lnum'] = abs(new_pos)
+		if new_pos > 0
+			let view['topline'] += new_pos - orig_pos
+			let view['topline'] = max([1, view['topline']])
+		else
+			let view['topline'] = -new_pos - 4
+		end
+		let view['curswant'] += 1
+		let view['col'] += 1
+		call winrestview(view)
+	else
+		call cursor(abs(s:Diffpos(0)), 1)
+	end
+endfunction
+
+function s:Diffit_init()
 	update
 	let out = s:System('git rev-parse',  '--is-inside-work-tree')
 	if v:shell_error == 128 || split(out)[0] != 'true'
@@ -104,14 +142,8 @@ function s:Diffit_()
 		call remove(pathlist, k)
 		call insert(pathlist, orig_path, 0)
 	end
-	let diff = tempname()
-	let path = ''
-	for path in pathlist
-		let out = s:System('git diff', '--', path, '>', diff)
-		if getfsize(diff) > 0
-			break
-		end
-	endfor
+	let [diff, path] = s:Read_diff(pathlist)
+	let orig = path == orig_path
 	if getfsize(diff) == 0
 		call s:Info('no changes')
 		return
@@ -119,7 +151,8 @@ function s:Diffit_()
 
 	let view = winsaveview()
 	silent! exe 'edit ' . tempname()
-	let b:view = copy(view)
+	let b:pathlist = pathlist
+	let b:view = view
 	let b:diffit = 1
 	setf git-diff
 	setlocal noswapfile
@@ -131,29 +164,21 @@ function s:Diffit_()
 	iabc <buffer>
 
 	nnoremap <silent> <buffer> s :call <SID>Stage_hunk(line('.'))<CR>
+	nnoremap <silent> <buffer> d :call <SID>Next_diff()<CR>
 
-	silent exe 'read ' . diff
-	silent 1delete _
-	setlocal nomodifiable
-
-	if path == orig_path
-		let orig_pos = view['lnum']
-		let new_pos = s:Diffpos(orig_pos)
-		let view['lnum'] = abs(new_pos)
-		if new_pos > 0
-			let view['topline'] += new_pos - orig_pos
-			let view['topline'] = max([1, view['topline']])
-		else
-			let view['topline'] = -new_pos - 4
-		end
-		let view['curswant'] += 1
-		let view['col'] += 1
-		call winrestview(view)
-	else
-		call cursor(abs(s:Diffpos(0)), 1)
-	end
-
+	call s:Write_diff(diff, orig)
 	echon '"' . path . '"'
+endfunction
+
+function s:Next_diff()
+	call remove(b:pathlist, 0)
+	let [diff, path] = s:Read_diff(b:pathlist)
+	if getfsize(diff) > 0
+		call s:Write_diff(diff, 0)
+		echon '"' . path . '"'
+	else
+		call s:Exit()
+	end
 endfunction
 
 function s:Diffpos(orig_pos)
@@ -222,12 +247,11 @@ function s:Stage_hunk(pos)
 
 	setlocal modifiable
 	silent exe h_range . 'delete _'
+	setlocal nomodifiable
 	if line('$') == header_end
-		bdelete
-		call s:Diffit_()
+		call s:Next_diff()
 		return
 	end
-	setlocal nomodifiable
 endfunction
 
 let &cpo = s:old_cpo

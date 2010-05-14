@@ -8,6 +8,12 @@ To install, copy diffit.vim to ~/.vim/plugin/diffit.vim .
 
 To toggle diffit mode, use <Leader>d, where <Leader> is '\' by default.
 
+Control keys:
+
+ <Leader>d	toggle diffit mode
+ s		stage hunk
+ d		skip file
+
 Have fun!
 
 Clemens Buchacher <drizzd@aon.at>, 10-May-2010
