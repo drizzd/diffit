@@ -1,8 +1,7 @@
-*** diffit ***
+	diffit - A git plugin for vim
 
-This is a git plugin for vim. The plugin is under development and may have
-serious bugs! The goal is to support much of git-gui's features, and possibly
-more.
+This plugin is under development and may have serious bugs! The goal is to
+support much of git-gui's features, and possibly more.
 
 To install, copy diffit.vim to ~/.vim/plugin/diffit.vim .
 
