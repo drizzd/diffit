@@ -1,0 +1,13 @@
+- handle file mode changes
+
+- navigation (prev/next hunk/file)
+
+- stage individual lines and (virtual) range
+
+- unstage changes
+
+- file browser (modified, staged, untracked)
+
+- prepare commit message
+
+- git add -e?
