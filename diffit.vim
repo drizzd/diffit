@@ -155,6 +155,9 @@ function s:Diffit_init()
 	let b:view = view
 	let b:diffit = 1
 	setf git-diff
+	if !exists('b:current_syntax')
+		setf diff
+	end
 	setlocal noswapfile
 	setlocal buftype=nofile
 	setlocal nowrap
